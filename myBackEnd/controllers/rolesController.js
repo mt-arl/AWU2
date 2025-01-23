@@ -2,9 +2,58 @@ const pool = require('../config/db');
 const bcrypt = require('bcrypt');
 
 const rolesController = {
-       // Create new user
+       // Create new role
+       createRole: async (req, res) => {
+        try {
+            const { roles } = req.body;
+    
+            // Validar que se haya proporcionado el campo 'roles'
+            if (!roles) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Por favor, complete el campo de roles.'
+                });
+            }
+    
+            // Verificar si el rol ya existe
+            const [existingRole] = await pool.query(
+                'SELECT id_rol FROM roles WHERE roles = ?',
+                [roles]
+            );
+    
+            if (existingRole.length > 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'El rol ya existe.'
+                });
+            }
+    
+            // Insertar el nuevo rol en la base de datos
+            const [result] = await pool.query(
+                'INSERT INTO roles (roles) VALUES (?)',
+                [roles]
+            );
+    
+            res.status(201).json({
+                success: true,
+                message: 'Rol creado exitosamente',
+                role: {
+                    id: result.insertId,
+                    roles: roles
+                }
+            });
+        } catch (error) {
+            console.error('Error al crear el rol:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error al crear el rol',
+                error: error.message
+            });
+        }
+    },
+    
        
-    // Get all users
+    // Get all roles
     getAllRoles: async (req, res) => {
         try {
             const [roles] = await pool.query('SELECT id_rol, roles FROM roles');
@@ -35,53 +84,55 @@ const rolesController = {
  
 
     // Update user
-    updateUser: async (req, res) => {
+    updatRole: async (req, res) => {
         try {
-            const { cedula, first_name, last_name, address, phone, email, gender, id_rol } = req.body;
-            const userId = req.params.id;
-
-            // Check if user exists
-            const [existingUser] = await pool.query('SELECT id FROM users WHERE id = ?', [userId]);
-
-            if (existingUser.length === 0) {
-                return res.status(404).json({ message: 'User not found' });
+            const { roles } = req.body;  // Obtener el nuevo nombre del rol desde el cuerpo de la solicitud
+            const roleId = req.params.id;  // Obtener el ID del rol desde los parámetros
+    
+            // Verificamos si el rol existe en la base de datos
+            const [existingRole] = await pool.query('SELECT id_rol FROM roles WHERE id_rol = ?', [roleId]);
+    
+            if (existingRole.length === 0) {
+                return res.status(404).json({ message: 'Role not found' });
             }
-
-            // Check if email or cedula is already used by another user
-            const [duplicateCheck] = await pool.query(
-                'SELECT id FROM users WHERE (email = ? OR cedula = ?) AND id != ?',
-                [email, cedula, userId]
-            );
-
-            if (duplicateCheck.length > 0) {
-                return res.status(400).json({ message: 'Email or cedula already in use by another user' });
-            }
-
-            await pool.query(
-                'UPDATE users SET cedula = ?, first_name = ?, last_name = ?, address = ?, phone = ?, email = ?, gender = ?, id_rol = ? WHERE id = ?',
-                [cedula, first_name, last_name, address, phone, email, gender, id_rol, userId]
-            );
-
-            res.json({ message: 'User updated successfully' });
+    
+            // Actualizamos el nombre del rol en la base de datos
+            await pool.query('UPDATE roles SET roles = ? WHERE id_rol = ?', [roles, roleId]);
+    
+            res.json({ message: 'Role updated successfully' });  // Mensaje de éxito
         } catch (error) {
-            res.status(500).json({ message: 'Error updating user', error: error.message });
+            console.error('Error updating role:', error);
+            res.status(500).json({ message: 'Error updating role', error: error.message });
         }
     },
 
     // Delete user
-    deleteUser: async (req, res) => {
+    deleteRole: async (req, res) => {
         try {
-            const [result] = await pool.query('DELETE FROM users WHERE id = ?', [req.params.id]);
-
-            if (result.affectedRows === 0) {
-                return res.status(404).json({ message: 'User not found' });
+            // Aseguramos que el ID del rol esté presente en los parámetros
+            const roleId = req.params.id;
+    
+            // Verificamos si el rol existe en la base de datos
+            const [existingRole] = await pool.query('SELECT id_rol FROM roles WHERE id_rol = ?', [roleId]);
+    
+            if (existingRole.length === 0) {
+                return res.status(404).json({ message: 'Role not found' });
             }
-
-            res.json({ message: 'User deleted successfully' });
+    
+            // Si el rol existe, lo eliminamos de la base de datos
+            const [result] = await pool.query('DELETE FROM roles WHERE id_rol = ?', [roleId]);
+    
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ message: 'Role not found' });
+            }
+    
+            res.json({ message: 'Role deleted successfully' });
         } catch (error) {
-            res.status(500).json({ message: 'Error deleting user', error: error.message });
+            console.error('Error deleting role:', error);
+            res.status(500).json({ message: 'Error deleting role', error: error.message });
         }
     },
+    
 
     // Update password
     updatePassword: async (req, res) => {
