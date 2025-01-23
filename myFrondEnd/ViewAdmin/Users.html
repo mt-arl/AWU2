@@ -118,7 +118,7 @@
                                         </select>
                                         <div class="mb-3">
                                             <label for="userRole" class="form-label">Rol</label>
-                                            <select class="form-select" id="userRole" name="role" required>
+                                            <select class="form-select" id="userRole" name="id_rol" required>
                                             </select>
                                         </div>
                                         <button type="button" class="btn btn-secondary"
@@ -134,28 +134,35 @@
             <script>
                 // add user
                 document.getElementById('addUserForm').addEventListener('submit', async (event) => {
-                    event.preventDefault(); 
-                    const formData = new FormData(event.target);
+    event.preventDefault();
+    const formData = new FormData(event.target);
 
-                    try {
-                        const response = await fetch('../controller/add_users.php', {
-                            method: 'POST',
-                            body: formData
-                        });
-                        const result = await response.json();
+    // Convierte FormData a JSON
+    const data = Object.fromEntries(formData.entries());
 
-                        if (result.success) {
-                            alert('Usuario agregado correctamente');
-                            cargarUsuarios(); 
-                            const modal = bootstrap.Modal.getInstance(document.getElementById('addUserModal'));
-                            modal.hide();
-                        } else {
-                            alert('Error al agregar usuario: ' + result.message);
-                        }
-                    } catch (error) {
-                        console.error('Error al agregar usuario:', error);
-                    }
-                });
+    try {
+        const response = await fetch('http://localhost:3000/api/users/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            alert('Usuario agregado correctamente');
+            cargarUsuarios();
+            const modal = bootstrap.Modal.getInstance(document.getElementById('addUserModal'));
+            modal.hide();
+        } else {
+            alert('Error al agregar usuario: ' + result.message);
+        }
+    } catch (error) {
+        console.error('Error al agregar usuario:', error);
+    }
+});
 
 
                 // load role
@@ -436,31 +443,30 @@
             });
             // delete user
             async function eliminarUsuario(event) {
-                const userId = event.target.getAttribute('data-id');
+    const userId = event.target.getAttribute('data-id');
 
-                if (confirm('¿Estás seguro de que deseas eliminar este usuario?')) {
-                    try {
-                        const response = await fetch('../controller/delete_user.php', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({ id: userId })
-                        });
-
-                        const result = await response.json();
-
-                        if (result.success) {
-                            alert('Usuario eliminado correctamente');
-                            cargarUsuarios();  
-                        } else {
-                            alert('Error al eliminar el usuario: ' + result.message);
-                        }
-                    } catch (error) {
-                        console.error('Error al eliminar usuario:', error);
-                    }
+    if (confirm('¿Estás seguro de que deseas eliminar este usuario?')) {
+        try {
+            const response = await fetch(`http://localhost:3000/api/users/${userId}`, {
+                method: 'DELETE', // Cambia a DELETE
+                headers: {
+                    'Content-Type': 'application/json'
                 }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                alert('Usuario eliminado correctamente');
+                cargarUsuarios();  
+            } else {
+                alert('Error al eliminar el usuario: ' + result.message);
             }
+        } catch (error) {
+            console.error('Error al eliminar usuario:', error);
+        }
+    }
+}
 
             
 

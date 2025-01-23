@@ -2,14 +2,15 @@
 const pool = require('../config/db');
 const bcrypt = require('bcrypt');
 
+
 const userController = {
        // Create new user
        createUser: async (req, res) => {
         try {
-            const { cedula, first_name, last_name, address, phone, email, password, gender } = req.body;
+            const { cedula, first_name, last_name, address, phone, email, password, gender , id_rol } = req.body;
 
             // Validate required fields
-            if (!cedula || !first_name || !last_name || !email || !password || !gender) {
+            if (!cedula || !first_name || !last_name || !email || !password || !gender || !id_rol) {
                 return res.status(400).json({
                     success: false,
                     message: 'Por favor complete todos los campos requeridos (cédula, nombre, apellido, email, contraseña, género)'
@@ -28,6 +29,10 @@ const userController = {
                     message: 'Ya existe un usuario con este email o cédula'
                 });
             }
+
+            const saltRounds = 10;
+            const hashedPassword = await bcrypt.hash(password, saltRounds);
+    
 
             // Set default role (user)
             const [result] = await pool.query(
