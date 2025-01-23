@@ -68,7 +68,7 @@ const authController = {
             });
         }
     },
-    
+
     async checkGoogleUser(req, res) {
         const { email } = req.body;
 
@@ -81,10 +81,10 @@ const authController = {
 
         try {
             console.log('Verificando usuario con email:', email);
-            
+
             const query = 'SELECT * FROM users WHERE email = ?';
             console.log('Ejecutando query:', query);
-            
+
             const [rows] = await pool.query(query, [email]);
             console.log('Resultado de la consulta:', rows);
 
@@ -107,32 +107,43 @@ const authController = {
             });
         }
     },
-
     async googleLogin(req, res) {
         const { email, google_id, google_token } = req.body;
-
+    
         try {
-            // 1. Buscar el usuario
-            const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
-
+            // Buscar el usuario en la base de datos
+            const [rows] = await pool.query(
+                `SELECT users.id, users.email, users.google_id, users.first_name, users.last_name, 
+                        users.id_rol, roles.roles AS role 
+                 FROM users 
+                 LEFT JOIN roles ON users.id_rol = roles.id_rol 
+                 WHERE users.email = ?`,
+                [email]
+            );
+    
             if (rows.length === 0) {
+                // Usuario no encontrado, devolver datos para el registro
                 return res.status(404).json({
                     success: false,
-                    message: 'Usuario no encontrado'
+                    isNewUser: true,
+                    email: email, // Utiliza los datos directamente de req.body
+                    firstName: '', // Si necesitas datos adicionales, asegúrate de incluirlos en el frontend
+                    lastName: '',
+                    message: 'Usuario no encontrado, necesita registrarse'
                 });
             }
-
+    
             const user = rows[0];
-
-            // 2. Actualizar el google_id si no está establecido
+    
+            // Si el usuario no tiene google_id, actualízalo
             if (!user.google_id) {
                 await pool.query(
-                    'UPDATE users SET google_id = ? WHERE id = ?',
-                    [google_id, user.id]
+                    'UPDATE users SET google_id = ?, google_token = ? WHERE id = ?',
+                    [google_id, google_token, user.id]
                 );
             }
-
-            // 3. Generar token JWT
+    
+            // Generar token JWT
             const token = jwt.sign(
                 {
                     id: user.id,
@@ -142,8 +153,8 @@ const authController = {
                 process.env.JWT_SECRET || 'tu_secreto_seguro',
                 { expiresIn: '24h' }
             );
-
-            // 4. Devolver respuesta
+    
+            // Respuesta exitosa
             return res.json({
                 success: true,
                 token,
@@ -152,7 +163,7 @@ const authController = {
                 role: user.role,
                 message: 'Login con Google exitoso'
             });
-
+    
         } catch (error) {
             console.error('Error en login con Google:', error);
             return res.status(500).json({
@@ -162,7 +173,6 @@ const authController = {
             });
         }
     }
-    
 };
 
 
