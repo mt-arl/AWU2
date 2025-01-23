@@ -161,7 +161,7 @@
                 // load role
                 async function cargarRolesEnFormulario() {
                     try {
-                        const response = await fetch('../controller/load_role.php');
+                        const response = await fetch('http://localhost:3000/api/roles');
                         const roles = await response.json();
 
                         const roleSelect = document.getElementById('userRole');
@@ -363,7 +363,7 @@
             });
             async function cargarRoles() {
                 try {
-                    const response = await fetch('../controller/load_role.php');
+                    const response = await fetch('http://localhost:3000/api/roles');
                     const data = await response.json();
 
                     const rolesTableBody = document.getElementById('rolesBody');
