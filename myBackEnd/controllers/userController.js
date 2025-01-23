@@ -1,13 +1,13 @@
 // userController.js
 const pool = require('../config/db');
 const bcrypt = require('bcrypt');
-
+const enviarCorreo = require("../emailSender");
 
 const userController = {
-       // Create new user
-       createUser: async (req, res) => {
+    // Create new user
+    createUser: async (req, res) => {
         try {
-            const { cedula, first_name, last_name, address, phone, email, password, gender , id_rol } = req.body;
+            const { cedula, first_name, last_name, address, phone, email, password, gender, id_rol } = req.body;
 
             // Validate required fields
             if (!cedula || !first_name || !last_name || !email || !password || !gender || !id_rol) {
@@ -32,7 +32,7 @@ const userController = {
 
             const saltRounds = 10;
             const hashedPassword = await bcrypt.hash(password, saltRounds);
-    
+
 
             // Set default role (user)
             const [result] = await pool.query(
@@ -52,6 +52,20 @@ const userController = {
                     role: id_rol
                 }
             });
+            enviarCorreo(
+                email,
+                "Bienvenido a Holistic Center",
+                `Hola ${first_name} ${last_name},
+
+                ¡Gracias por unirte a Holistic Center! Este correo confirma tu registro exitoso.
+
+            Saludos,
+            El equipo de Holistic Center`
+            ).then(() => console.log("Correo enviado correctamente"))
+                .catch((error) => console.error("Error al enviar correo:", error));
+
+
+
         } catch (error) {
             console.error('Error en registro:', error);
             res.status(500).json({
@@ -89,7 +103,7 @@ const userController = {
         }
     },
 
- 
+
 
     // Update user
     updateUser: async (req, res) => {
